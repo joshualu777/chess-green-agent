@@ -43,11 +43,19 @@ async def launch_evaluation():
 
     # send the task description
     print("Sending task description to green agent...")
+    # task_config = {
+    #     "env": "chess",
+    #     "user_strategy": "llm",
+    #     "user_model": "openai/gpt-4o-mini",
+    #     "user_provider": "openai",
+    # }
     task_config = {
         "env": "chess",
         "user_strategy": "llm",
         "user_model": "openai/gpt-4o-mini",
         "user_provider": "openai",
+        # "user_model": "openrouter/openai/gpt-4o-mini",
+        # "user_provider": "litellm_proxy",
     }
     task_text = f"""
 Task: instantiate chess benchmark to test the agents located at:
@@ -77,3 +85,31 @@ You should use the following env configuration:
     p_white_2.terminate()
     p_white_2.join()
     print("Agents terminated.")
+
+async def launch_remote_evaluation(green_url: str, white_url_1: str, white_url_2: str):
+    task_config = {
+        "env": "chess",
+        "user_strategy": "llm",
+        "user_model": "openai/gpt-4o-mini",
+        "user_provider": "openai",
+        # "user_model": "openrouter/openai/gpt-4o-mini",
+        # "user_provider": "litellm_proxy",
+    }
+    task_text = f"""
+Task: instantiate chess benchmark to test the agents located at:
+<white_agent_url_1>
+{white_url_1}
+</white_agent_url_1>
+<white_agent_url_2>
+{white_url_2}
+</white_agent_url_2>
+You should use the following env configuration:
+<env_config>
+{json.dumps(task_config, indent=2)}
+</env_config>
+    """
+
+    print("Sending task description to green agent...")
+    response = await my_a2a.send_message(green_url, task_text)
+    print("Response from green agent:")
+    print(response)

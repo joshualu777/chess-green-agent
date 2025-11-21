@@ -1,4 +1,4 @@
-name = "tau_green_agent"
+name = "my_chess_green_agent"
 description = "The assessment hosting agent for tau-bench."
 version = "0.1.0"
 

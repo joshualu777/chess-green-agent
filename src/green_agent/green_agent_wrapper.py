@@ -1,5 +1,12 @@
 import asyncio
-import pyspiel
+try:
+    import pyspiel  # Provided when OpenSpiel Python bindings are built/installed
+except ModuleNotFoundError as e:
+    raise ModuleNotFoundError(
+        "pyspiel module not found. It is not distributed as a standalone PyPI package. "
+        "You appear to be running inside a venv that lacks the OpenSpiel Python bindings. "
+        "Either (1) run your commands via 'uv run' so it builds pyspiel, or (2) build OpenSpiel from source and 'pip install .' in open_spiel/python, or (3) ensure the same environment used for 'launch' is activated before 'python main.py run'."
+    ) from e
 from src.my_util import utils
 import json
 from a2a.types import SendMessageSuccessResponse, Message
