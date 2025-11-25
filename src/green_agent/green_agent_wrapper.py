@@ -1,17 +1,14 @@
 import asyncio
-try:
-    import pyspiel  # Provided when OpenSpiel Python bindings are built/installed
-except ModuleNotFoundError as e:
-    raise ModuleNotFoundError(
-        "pyspiel module not found. It is not distributed as a standalone PyPI package. "
-        "You appear to be running inside a venv that lacks the OpenSpiel Python bindings. "
-        "Either (1) run your commands via 'uv run' so it builds pyspiel, or (2) build OpenSpiel from source and 'pip install .' in open_spiel/python, or (3) ensure the same environment used for 'launch' is activated before 'python main.py run'."
-    ) from e
+import pyspiel
 from src.my_util import utils
 import json
+import re
 from a2a.types import SendMessageSuccessResponse, Message
 from a2a.utils import get_text_parts
 from src.my_util import my_a2a
+from src.my_util.utils import GAME_FILE, GAME_DATA_FILE, PLAYER_DATA_FILE, GAME_EVAL_FILE
+
+from google.cloud import storage
 
 class GreenAgent:
     
@@ -20,10 +17,9 @@ class GreenAgent:
         self.pyspiel_state = self.game.new_initial_state()
         self.agents = {}
         self.game_data = {}
-        initial_eval = utils.post_chess_api({"fen": self.pyspiel_state.to_string()})["eval"]
+        initial_eval = utils.get_engine_eval(self.pyspiel_state.to_string())
         self.eval_history = [initial_eval]
-        self.player_eval = {"White": [], "Black": []}
-        
+        self.player_eval = {"White": {"Overall": [], "Equal": [], "Winning": [], "Losing": []}, "Black": {"Overall": [], "Equal": [], "Winning": [], "Losing": []}}
     
     def register_agent(self, player, agent):
         self.agents[player] = agent
@@ -82,7 +78,7 @@ class GreenAgent:
         
         to_play = 'White' if self.pyspiel_state.current_player() == 1 else 'Black'
         
-        legal_moves = {str(i + 1): self.pyspiel_state.action_to_string(a) for i, a in enumerate(self.pyspiel_state.legal_actions())}
+        legal_moves = {str(i): self.pyspiel_state.action_to_string(i) for i in self.pyspiel_state.legal_actions()}
         prompt = (
             f"Let's play chess. The current game state in Forsyth-Edwards Notation (FEN) notation is:\n"
             f"{readable_state_str}\n"
@@ -91,9 +87,12 @@ class GreenAgent:
             f"The legal moves are:\n"
             f"{ {k: v for k, v in legal_moves.items()} }\n"
             f"You are playing as player {to_play}.\n"
-            f"It is now your turn. Play your strongest move. The move MUST be legal. "
-            f"Reason step by step to come up with your move, then output your final answer in the format "
-            f'"Final Answer: Y" where Y is the index of your chosen move from the legal moves above.'
+            f"It is now your turn. Play your strongest move. The move MUST be legal.\n"
+            f"Aim to avoid three-fold repetition, perpetual checks, and fifty-move rule draws when you are winning.\n"
+            f"Before giving your final answer, briefly explain your reasoning.\n"
+            f"Then, on the LAST line only, output your final answer in the format:\n"
+            f"Final Answer: Y\n"
+            f"where Y is the index of your chosen move from the legal moves above."
         )
         if retry:
             prompt = (
@@ -105,9 +104,12 @@ class GreenAgent:
                 f"The legal moves are:\n"
                 f"{ {k: v for k, v in legal_moves.items()} }\n"
                 f"You are playing as player {to_play}.\n"
-                f"It is now your turn. Play your strongest move. The move MUST be legal. "
-                f"Reason step by step to come up with your move, then output your final answer in the format "
-                f'"Final Answer: Y" where Y is the index of your chosen move from the legal moves above.'
+                f"It is now your turn. Play your strongest move. The move MUST be legal.\n"
+                f"Aim to avoid three-fold repetition, perpetual checks, and fifty-move rule draws when you are winning.\n"
+                f"Before giving your final answer, briefly explain your reasoning.\n"
+                f"Then, on the LAST line only, output your final answer in the format:\n"
+                f"Final Answer: Y\n"
+                f"where Y is the index of your chosen move from the legal moves above."
             )
         model_response = await self.send_message_to_agent(to_play, prompt)
         move = model_response.split("Final Answer: ")[-1].strip()
@@ -122,25 +124,43 @@ class GreenAgent:
             self.pyspiel_state.apply_action(self.pyspiel_state.string_to_action(move))
         except Exception as e:
             raise ValueError(f"Failed to apply move '{move}': {e}")
-        move_eval = utils.post_chess_api({"fen": self.pyspiel_state.to_string()})["eval"]
+        
+        move_eval = utils.get_engine_eval(self.pyspiel_state.to_string())
 
-        self.game_data[f'Move {move_num} for {to_play}'] = model_response
+        self.game_data[f'Move {move_num} input prompt for {to_play}'] = prompt
+        self.game_data[f'Move {move_num} model response for {to_play}'] = model_response
         self.game_data[f"Move {move_num} game evaluation after {to_play}'s move"] = move_eval
-        # save pgn
-        with open("game1.pgn", "w") as f:
+
+        with open(GAME_FILE, "w") as f:
             f.write(str(utils.get_pgn(self.pyspiel_state)))
-        # save game with reasoning
-        with open("game_data1.json", "w") as f:
+        with open(GAME_DATA_FILE, "w") as f:
             json.dump(self.game_data, f, indent=4)
 
         self.eval_history.append(move_eval)
+        prev_eval = self.eval_history[-2]
         if to_play == "White":
-            self.player_eval["White"].append(-1 * (move_eval - self.eval_history[-2]))
+            cpl = -1 * (move_eval - prev_eval)
+            self.player_eval["White"]["Overall"].append(cpl)
+            if prev_eval <= 1 and prev_eval >= -1:
+                self.player_eval["White"]["Equal"].append(cpl)
+            elif prev_eval > 1:
+                self.player_eval["White"]["Winning"].append(cpl)
+            elif prev_eval < -1:
+                self.player_eval["White"]["Losing"].append(cpl)
+
         else:
-            self.player_eval["Black"].append(move_eval - self.eval_history[-2])
-        
-        # save evals
-        with open("player_data1.json", "w") as f:
+            cpl = move_eval - prev_eval
+            self.player_eval["Black"]["Overall"].append(cpl)
+            if prev_eval <= 1 and prev_eval >= -1:
+                self.player_eval["Black"]["Equal"].append(cpl)
+            elif prev_eval < -1:
+                self.player_eval["Black"]["Winning"].append(cpl)
+            elif prev_eval > 1:
+                self.player_eval["Black"]["Losing"].append(cpl)
+
+        with open(PLAYER_DATA_FILE, "w") as f:
             json.dump(self.player_eval, f, indent=4)
+        with open(GAME_EVAL_FILE, "w") as f:
+            json.dump(self.eval_history, f, indent=4)
 
         return move, move_eval

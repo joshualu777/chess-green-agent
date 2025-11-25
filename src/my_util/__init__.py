@@ -1,14 +1,16 @@
 import re
-from typing import Dict
 
-
-def parse_tags(str_with_tags: str) -> Dict[str, str]:
-    """the target str contains tags in the format of <tag_name> ... </tag_name>, parse them out and return a dict"""
-
-    tags = re.findall(r"<(.*?)>(.*?)</\1>", str_with_tags, re.DOTALL)
-    return {tag: content.strip() for tag, content in tags}
+def parse_tags(str_with_tags):
+    pairs = re.findall(r"<(.*?)>(.*?)</\1>", str_with_tags, re.DOTALL)
+    result = {}
+    for tag, content in pairs:
+        value = content.strip()
+        if not tag in result:
+            result[tag] = []
+        result[tag].append(value)
+    return result
 
 
 if __name__ == "__main__":
-    test_str = "<tag1>Hello</tag1> some text <tag2>World</tag2>"
+    test_str = "<tag1>Hello</tag1> some text <tag2>World</tag2> <tag2>Again</tag2>"
     print(parse_tags(test_str))

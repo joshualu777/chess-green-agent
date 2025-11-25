@@ -1,16 +1,19 @@
 """Launcher module - initiates and coordinates the evaluation process."""
 
 import multiprocessing
+import threading
+import time
 import json
 from src.green_agent.agent import start_green_agent
 from src.white_agent.agent import start_white_agent
 from src.my_util import my_a2a
+from src.my_util.utils import close_engine
 
 
-async def launch_evaluation():
+async def launch_evaluation(local: bool = False):
     # start green agent
     print("Launching green agent...")
-    green_address = ("localhost", 9001)
+    green_address = ("localhost", 9001, local)
     green_url = f"http://{green_address[0]}:{green_address[1]}"
     p_green = multiprocessing.Process(
         target=start_green_agent, args=("tau_green_agent", *green_address)
@@ -21,7 +24,7 @@ async def launch_evaluation():
 
     # start white agent 1
     print("Launching white agent 1...")
-    white_address_1 = ("localhost", 9002)
+    white_address_1 = ("localhost", 9002, local)
     white_url_1 = f"http://{white_address_1[0]}:{white_address_1[1]}"
     p_white_1 = multiprocessing.Process(
         target=start_white_agent, args=("general_white_agent", *white_address_1)
@@ -32,7 +35,7 @@ async def launch_evaluation():
 
     # start white agent 2
     print("Launching white agent 2...")
-    white_address_2 = ("localhost", 9003)
+    white_address_2 = ("localhost", 9003, local)
     white_url_2 = f"http://{white_address_2[0]}:{white_address_2[1]}"
     p_white_2 = multiprocessing.Process(
         target=start_white_agent, args=("general_white_agent", *white_address_2)
@@ -46,25 +49,25 @@ async def launch_evaluation():
     # task_config = {
     #     "env": "chess",
     #     "user_strategy": "llm",
-    #     "user_model": "openai/gpt-4o-mini",
+    #     "user_model": "openai/gpt-5.1",
     #     "user_provider": "openai",
     # }
     task_config = {
         "env": "chess",
         "user_strategy": "llm",
-        "user_model": "openai/gpt-4o-mini",
+        "user_model": "openai/gpt-5.1",
         "user_provider": "openai",
-        # "user_model": "openrouter/openai/gpt-4o-mini",
+        # "user_model": "openrouter/openai/gpt-5.1",
         # "user_provider": "litellm_proxy",
     }
     task_text = f"""
 Task: instantiate chess benchmark to test the agents located at:
-<white_agent_url_1>
-http://{white_address_1[0]}:{white_address_1[1]}/
-</white_agent_url_1>
-<white_agent_url_2>
-http://{white_address_2[0]}:{white_address_2[1]}/
-</white_agent_url_2>
+<white_agent_url>
+{white_url_1}
+</white_agent_url>
+<white_agent_url>
+{white_url_2}
+</white_agent_url>
 You should use the following env configuration:
 <env_config>
 {json.dumps(task_config, indent=2)}
@@ -73,7 +76,7 @@ You should use the following env configuration:
     print("Task description:")
     print(task_text)
     print("Sending...")
-    response = await my_a2a.send_message(green_url, task_text)
+    response = await my_a2a.send_message(green_url, task_text, cur_timeout=None)
     print("Response from green agent:")
     print(response)
 
@@ -86,23 +89,30 @@ You should use the following env configuration:
     p_white_2.join()
     print("Agents terminated.")
 
+    try:
+        close_engine()
+        print("Engine closed.")
+    except Exception as e:
+        print(f"Engine close failed: {e}")
+
+# async def launch_remote_evaluation(green_url: str, white_url_: str):
 async def launch_remote_evaluation(green_url: str, white_url_1: str, white_url_2: str):
     task_config = {
         "env": "chess",
         "user_strategy": "llm",
-        "user_model": "openai/gpt-4o-mini",
+        "user_model": "openai/gpt-5.1",
         "user_provider": "openai",
-        # "user_model": "openrouter/openai/gpt-4o-mini",
+        # "user_model": "openrouter/openai/gpt-5.1",
         # "user_provider": "litellm_proxy",
     }
     task_text = f"""
 Task: instantiate chess benchmark to test the agents located at:
-<white_agent_url_1>
+<white_agent_url>
 {white_url_1}
-</white_agent_url_1>
-<white_agent_url_2>
+</white_agent_url>
+<white_agent_url>
 {white_url_2}
-</white_agent_url_2>
+</white_agent_url>
 You should use the following env configuration:
 <env_config>
 {json.dumps(task_config, indent=2)}
@@ -113,3 +123,6 @@ You should use the following env configuration:
     response = await my_a2a.send_message(green_url, task_text)
     print("Response from green agent:")
     print(response)
+
+    print("Evaluation complete.")
+

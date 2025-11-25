@@ -56,16 +56,16 @@ class GeneralWhiteAgentExecutor(AgentExecutor):
         if os.environ.get("LITELLM_PROXY_API_KEY") is not None:
             response = completion(
                 messages=messages,
-                model="openrouter/openai/gpt-4o-mini",
+                model="openrouter/openai/gpt-5.1",
                 custom_llm_provider="litellm_proxy",
-                temperature=0.0,
+                temperature=1,
             )
         else:
             response = completion(
                 messages=messages,
-                model="openai/gpt-4o-mini",
+                model="openai/gpt-5.1",
                 custom_llm_provider="openai",
-                temperature=0.0,
+                temperature=1,
             )
         next_message = response.choices[0].message.model_dump()  # type: ignore
         messages.append(
@@ -84,13 +84,14 @@ class GeneralWhiteAgentExecutor(AgentExecutor):
         raise NotImplementedError
 
 
-def start_white_agent(agent_name="general_white_agent", host="localhost", port=9002):
+def start_white_agent(agent_name="general_white_agent", host="localhost", port=9002, local=False):
     print("Starting white agent...")
-    # # # without controller
-    # url = f"http://{host}:{port}"
-    # card = prepare_white_agent_card(url)
-
-    card = prepare_white_agent_card(os.getenv("AGENT_URL"))
+    # # without controller
+    if local:
+        url = f"http://{host}:{port}"
+        card = prepare_white_agent_card(url)
+    else:
+        card = prepare_white_agent_card(os.getenv("AGENT_URL"))
 
     request_handler = DefaultRequestHandler(
         agent_executor=GeneralWhiteAgentExecutor(),

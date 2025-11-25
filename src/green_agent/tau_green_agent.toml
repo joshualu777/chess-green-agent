@@ -24,7 +24,7 @@ You should use the following env configuration:
 {
   "env": "retail",
   "user_strategy": "llm",
-  "user_model": "openai/gpt-4o-mini",
+  "user_model": "openai/gpt-5.1",
   "user_provider": "openai",
   "task_split": "test",
   "task_ids": [

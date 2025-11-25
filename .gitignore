@@ -3,7 +3,6 @@ instructions/
 .env
 *.log
 pack_docker.sh
-requirements.txt
 .ab
 
 # Python-generated files
@@ -16,3 +15,6 @@ wheels/
 
 # Virtual environments
 .venv
+
+# Chess engine
+engines/

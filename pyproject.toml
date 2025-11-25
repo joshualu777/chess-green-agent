@@ -15,6 +15,7 @@ dependencies = [
     "python-chess>=1.8.0",
     "open_spiel>=1.0.0",
     "requests>=2.31.0",
+    "google-cloud-storage>=2.17.0"
 ]
 
 [tool.uv.sources]

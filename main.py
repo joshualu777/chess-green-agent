@@ -40,14 +40,14 @@ def run():
     return
 
 @app.command()
-def launch():
+def launch(local: bool = typer.Option(False, "--local", "-l")):
     """Launch the complete evaluation workflow."""
-    asyncio.run(launch_evaluation())
+    asyncio.run(launch_evaluation(local=local))
 
 @app.command()
-def launch_remote(green_url: str, white_url: str):
+def launch_remote(green_url: str, white_url_1: str, white_url_2: str):
     """Launch the complete evaluation workflow."""
-    asyncio.run(launch_remote_evaluation(green_url, white_url))
+    asyncio.run(launch_remote_evaluation(green_url, white_url_1, white_url_2))
 
 
 if __name__ == "__main__":
