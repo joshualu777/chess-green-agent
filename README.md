@@ -21,16 +21,16 @@ The green agent expects two white agent urls. It will initiate a game between th
 
 Prompt: the green agent will send each agent the move history, the current board position in FEN format, and a list of all legal moves + indexes. It expects the white agent to return the index of its chosen move, along with reasoning.
 
-For each move, the green agent will provide a per-move evaluation (Δeval) to determine how good the move is.
+For each move, the green agent will provide a per-move evaluation (clp for centipawn loss) to determine how good the move is.
 
-After the game is done, the green agent will adjust each white agent's elo depending on the result. In addition, average Δeval statistics will be returned. Finally, the green agent will also print out the full game.
+After the game is done, the green agent will adjust each white agent's elo depending on the result. In addition, average clp statistics will be returned. Finally, the green agent will also print out the full game.
 
 The green agent will also store the following files in a Google Cloud Storage Bucket:
 elo_raings.json: a dictionary with ratings of all players
 game.pgn: the game file
 game_data.json: full output file containing model prompt, model response, and game evaluation
 game_eval.json: a running list of the game evaluation
-player_data.json: the Δeval for each player
+player_data.json: the clp for each player
 
 
 ## Installation and Usage
