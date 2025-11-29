@@ -12,6 +12,7 @@ GAME_DATA_FILE="game_data.json"
 GAME_EVAL_FILE="game_eval.json"
 PLAYER_DATA_FILE="player_data.json"
 
+# Source: https://github.com/google-deepmind/game_arena/tree/main
 def get_pgn(target_state, player_names=None) -> chess.pgn.Game:
     if player_names is None:
         player_names = ["Black", "White"]
@@ -55,7 +56,7 @@ def post_chess_api(data=None):
     )
     return response.json()
 
-ENGINE_PATH = "engines/stockfish-linux"
+ENGINE_PATH = "engines/stockfish-mac"
 _engine = None
 
 def get_engine():

@@ -43,9 +43,9 @@ async def ask_agent_to_solve(white_agent_url_1, white_agent_url_2):
             cur_result = await green_agent.execute(green_agent.pyspiel_state, is_retry)
             is_retry = False
             print(cur_result)
-        except:
+        except Exception as e:
             is_retry = True
-            print("Illegal move made, try again")
+            print("Illegal move made, try again", e)
     game_result = green_agent.get_game_result()
     
     agent_elo = load_state_from_gcs(ELO_OBJECT_NAME)

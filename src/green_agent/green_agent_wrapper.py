@@ -3,6 +3,7 @@ import pyspiel
 from src.my_util import utils
 import json
 import re
+import os
 from a2a.types import SendMessageSuccessResponse, Message
 from a2a.utils import get_text_parts
 from src.my_util import my_a2a
@@ -12,7 +13,7 @@ from google.cloud import storage
 
 class GreenAgent:
     
-    def __init__(self):
+    def __init__(self, test_index=None):
         self.game = pyspiel.load_game("chess")
         self.pyspiel_state = self.game.new_initial_state()
         self.agents = {}
@@ -31,11 +32,8 @@ class GreenAgent:
             self.agents[player], message, context_id=self.agents[context_id_str]
         )
         res_root = white_agent_response.root
-        assert isinstance(res_root, SendMessageSuccessResponse)
         res_result = res_root.result
-        assert isinstance(
-            res_result, Message
-        )
+
         if self.agents[context_id_str] is None:
             self.agents[context_id_str] = res_result.context_id
         else:
@@ -44,11 +42,9 @@ class GreenAgent:
             )
 
         text_parts = get_text_parts(res_result.parts)
-        assert len(text_parts) == 1, (
-            "Expecting exactly one text part from the white agent"
-        )
+
         white_text = text_parts[0]
-        print(f"@@@ White agent response:\n{white_text}")
+        print(f"\nWhite agent response:\n{white_text}")
 
         return white_text
 
@@ -111,12 +107,21 @@ class GreenAgent:
                 f"Final Answer: Y\n"
                 f"where Y is the index of your chosen move from the legal moves above."
             )
-        model_response = await self.send_message_to_agent(to_play, prompt)
-        move = model_response.split("Final Answer: ")[-1].strip()
+        test_mode = os.getenv("TEST_MODE", "false").lower() == "true"
+        if test_mode:
+            test_index = int(os.getenv("TEST_INDEX", "0"))
+            with open(f'test_cases/test_case_{test_index}.json', 'r') as f:
+                test_case = json.load(f)
+            model_response = "In test mode, using predefined move."
+            move = str(self.pyspiel_state.string_to_action(test_case[to_play][move_num - 1]))
+            print(f"Test mode: selected move {move} for {to_play} for {test_case[to_play][move_num - 1]}")
+        else:
+            model_response = await self.send_message_to_agent(to_play, prompt)
+            move = model_response.split("Final Answer: ")[-1].strip()
         if move in legal_moves:
             move = legal_moves[move]
         else:
-            raise Exception("Index not valid")
+            raise Exception(f"Index not valid: {move}")
         try:
             move_code = self.pyspiel_state.string_to_action(move)
             if move_code not in self.pyspiel_state.legal_actions():
