@@ -69,7 +69,7 @@ async def ask_agent_to_solve(white_agent_url_1, white_agent_url_2):
     return game_result, agent_elo, green_agent.player_eval
 
 
-class TauGreenAgentExecutor(AgentExecutor):
+class ChessGreenAgentExecutor(AgentExecutor):
     def __init__(self):
         pass
 
@@ -80,8 +80,8 @@ class TauGreenAgentExecutor(AgentExecutor):
         tags = parse_tags(user_input)
         white_agent_url_1 = tags["white_agent_url"][0]
         white_agent_url_2 = tags["white_agent_url"][1]
-        env_config_str = tags["env_config"][0]
-        env_config = json.loads(env_config_str)
+        # env_config_str = tags["env_config"][0]
+        # env_config = json.loads(env_config_str)
 
         # set up the environment
         print("Green agent: Setting up the environment...")
@@ -129,7 +129,7 @@ class TauGreenAgentExecutor(AgentExecutor):
         raise NotImplementedError
 
 
-def start_green_agent(agent_name="tau_green_agent", host="localhost", port=9001, local=False):
+def start_green_agent(agent_name="chess_green_agent", host="localhost", port=9001, local=False):
     print("Starting green agent for chess benchmark...")
     agent_card_dict = load_agent_card_toml(agent_name)
     
@@ -139,9 +139,11 @@ def start_green_agent(agent_name="tau_green_agent", host="localhost", port=9001,
         agent_card_dict["url"] = url  # complete all required card fields
     else:
         agent_card_dict["url"] = os.getenv("AGENT_URL")
+        print("Printing agent card:")
+        print(agent_card_dict)
 
     request_handler = DefaultRequestHandler(
-        agent_executor=TauGreenAgentExecutor(),
+        agent_executor=ChessGreenAgentExecutor(),
         task_store=InMemoryTaskStore(),
     )
 

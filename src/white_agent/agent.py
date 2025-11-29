@@ -53,20 +53,12 @@ class GeneralWhiteAgentExecutor(AgentExecutor):
                 "content": user_input,
             }
         )
-        if os.environ.get("LITELLM_PROXY_API_KEY") is not None:
-            response = completion(
-                messages=messages,
-                model="openrouter/openai/gpt-5.1",
-                custom_llm_provider="litellm_proxy",
-                temperature=1,
-            )
-        else:
-            response = completion(
-                messages=messages,
-                model="openai/gpt-5.1",
-                custom_llm_provider="openai",
-                temperature=1,
-            )
+        response = completion(
+            messages=messages,
+            model="openai/gpt-5.1",
+            custom_llm_provider="openai",
+            temperature=1,
+        )
         next_message = response.choices[0].message.model_dump()  # type: ignore
         messages.append(
             {

@@ -1,20 +1,20 @@
-"""CLI entry point for agentify-example-tau-bench."""
+"""CLI entry point for agentify chess benchmark."""
 
 import typer
 import asyncio
 
-from src.green_agent import start_green_agent
-from src.white_agent import start_white_agent
+from src.green_agent.agent import start_green_agent
+from src.white_agent.agent import start_white_agent
 from src.launcher import launch_evaluation, launch_remote_evaluation
 from pydantic_settings import BaseSettings
 
 
-class TaubenchSettings(BaseSettings):
+class ChessbenchSettings(BaseSettings):
     role: str = "green"
     host: str = "127.0.0.1"
     agent_port: int = 9010
 
-app = typer.Typer(help="Agentified Tau-Bench - Standardized agent assessment framework")
+app = typer.Typer(help="Agentified Chess-Bench - Standardized agent assessment framework")
 
 
 @app.command()
@@ -30,7 +30,7 @@ def white():
 
 @app.command()
 def run():
-    settings = TaubenchSettings()
+    settings = ChessbenchSettings()
     if settings.role == "green":
         start_green_agent(host=settings.host, port=settings.agent_port)
     elif settings.role == "white":

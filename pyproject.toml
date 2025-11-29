@@ -1,7 +1,7 @@
 [project]
-name = "agentify-example-tau-bench"
+name = "chess-bench-example"
 version = "0.1.0"
-description = "Example code of agentifying tau-bench for the blog `Agentify the Agent Assessment`."
+description = "Code for agentifying a chess benchmark."
 readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [

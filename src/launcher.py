@@ -16,7 +16,7 @@ async def launch_evaluation(local: bool = False):
     green_address = ("localhost", 9001, local)
     green_url = f"http://{green_address[0]}:{green_address[1]}"
     p_green = multiprocessing.Process(
-        target=start_green_agent, args=("tau_green_agent", *green_address)
+        target=start_green_agent, args=("chess_green_agent", *green_address)
     )
     p_green.start()
     assert await my_a2a.wait_agent_ready(green_url), "Green agent not ready in time"
@@ -95,7 +95,6 @@ You should use the following env configuration:
     except Exception as e:
         print(f"Engine close failed: {e}")
 
-# async def launch_remote_evaluation(green_url: str, white_url_: str):
 async def launch_remote_evaluation(green_url: str, white_url_1: str, white_url_2: str):
     task_config = {
         "env": "chess",
@@ -125,4 +124,3 @@ You should use the following env configuration:
     print(response)
 
     print("Evaluation complete.")
-
