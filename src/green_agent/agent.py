@@ -16,7 +16,7 @@ from a2a.server.tasks import InMemoryTaskStore
 from a2a.types import AgentCard, SendMessageSuccessResponse, Message
 from a2a.utils import new_agent_text_message, get_text_parts
 from src.my_util import parse_tags, my_a2a
-from src.my_util.utils import save_state_to_gcs, load_state_from_gcs, GAME_FILE, GAME_DATA_FILE, PLAYER_DATA_FILE, GAME_EVAL_FILE
+from src.my_util.utils import save_state_to_gcs, save_pgn_to_gcs, load_state_from_gcs, GAME_FILE, GAME_DATA_FILE, PLAYER_DATA_FILE, GAME_EVAL_FILE
 from src.green_agent.green_agent_wrapper import GreenAgent
 
 dotenv.load_dotenv()
@@ -168,11 +168,11 @@ def store_files(white_url_1, white_url_2):
     game_string = clean_url(f'{white_url_1}_vs_{white_url_2}_{timestamp}')
 
     try:
-        with open(GAME_FILE, "r") as f:
-            game_state = json.load(f)
+        with open(GAME_FILE, "r", encoding="utf-8") as f:
+            pgn_text = f.read()
     except:
-        game_state = {}
-    save_state_to_gcs(game_state, f"{game_string}_{GAME_FILE}")
+        pgn_text = ""
+    save_pgn_to_gcs(pgn_text, f"{game_string}_{GAME_FILE}")
 
     try:
         with open(GAME_DATA_FILE, "r") as f:

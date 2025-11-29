@@ -55,7 +55,7 @@ def post_chess_api(data=None):
     )
     return response.json()
 
-ENGINE_PATH = "engines/stockfish-mac"
+ENGINE_PATH = "engines/stockfish-linux"
 _engine = None
 
 def get_engine():
@@ -96,6 +96,13 @@ def save_state_to_gcs(state, object_name):
 
     payload = json.dumps(state)
     blob.upload_from_string(payload, content_type="application/json")
+
+def save_pgn_to_gcs(pgn_text, object_name):
+    client = storage.Client()
+    bucket = client.bucket(BUCKET_NAME)
+    blob = bucket.blob(object_name)
+
+    blob.upload_from_string(pgn_text, content_type="application/x-chess-pgn")
 
 def load_state_from_gcs(object_name):
     client = storage.Client()
