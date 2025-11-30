@@ -80,6 +80,8 @@ ENGINE_PATH = "engines/stockfish-mac"
 
 ### Running the Code
 
+Install uv. `brew install uv` for mac.
+
 Run the following to configure the uv environment:
 
 ```bash
