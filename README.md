@@ -26,10 +26,15 @@ For each move, the green agent will provide a per-move evaluation (clp for centi
 After the game is done, the green agent will adjust each white agent's elo depending on the result. In addition, average clp statistics will be returned. Finally, the green agent will also print out the full game.
 
 The green agent will also store the following files in a Google Cloud Storage Bucket:
+
 elo_raings.json: a dictionary with ratings of all players
+
 game.pgn: the game file
+
 game_data.json: full output file containing model prompt, model response, and game evaluation
+
 game_eval.json: a running list of the game evaluation
+
 player_data.json: the clp for each player
 
 
@@ -38,8 +43,11 @@ player_data.json: the clp for each player
 Create a Google Cloud Storage bucket, do the necessary authentication.
 
 Configure the environment variables:
+
 export OPENAI_API_KEY="[your OpenAI API key]"
+
 export AGENT_BUCKET="[your GCS bucket]"
+
 export TEST_MODE="false"
 
 Now, configure the chess engine. There will be separate steps for Local Mode and Remote Mode, but the directory structure should look like this:
@@ -89,6 +97,7 @@ uv run python main.py launch -l
 To reproduce the three test cases, set the following environment variables:
 
 export TEST_MODE="True"
+
 export TEST_INDEX="0"
 
 The test case to be ran is controlled by TEST_INDEX, and right now, it can be set to "0", "1", or "2".
